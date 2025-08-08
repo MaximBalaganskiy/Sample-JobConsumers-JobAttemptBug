@@ -24,7 +24,7 @@ public class RecurringJobConfigurationService :
 
         var endpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
-        await endpoint.AddOrUpdateRecurringJob(nameof(MaintenanceConsumer), new PerformRegularlyScheduledMaintenance(), x => x.Every(minutes: 1),
+        await endpoint.AddOrUpdateRecurringJob(nameof(MaintenanceConsumer), new PerformRegularlyScheduledMaintenance(), x => x.Every(seconds: 1),
             stoppingToken);
     }
 }

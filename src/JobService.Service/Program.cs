@@ -50,14 +50,14 @@ builder.Services.AddOptions<SqlTransportOptions>()
         options.ConnectionString = connectionString;
     });
 
-builder.Services.AddPostgresMigrationHostedService();
+// builder.Services.AddPostgresMigrationHostedService();
 
 // Add web-based dashboard
-builder.Services.AddResQueue(opt =>
-{
-    opt.SqlEngine = ResQueueSqlEngine.Postgres;
-});
-builder.Services.AddResQueueMigrationsHostedService();
+// builder.Services.AddResQueue(opt =>
+// {
+//     opt.SqlEngine = ResQueueSqlEngine.Postgres;
+// });
+// builder.Services.AddResQueueMigrationsHostedService();
 
 builder.Services.AddDbContext<JobServiceSagaDbContext>(optionsBuilder =>
 {
@@ -74,7 +74,7 @@ builder.Services.AddHostedService<MigrationHostedService<JobServiceSagaDbContext
 
 builder.Services.AddMassTransit(x =>
 {
-    x.AddSqlMessageScheduler();
+    // x.AddSqlMessageScheduler();
 
     x.ConfigureUsageTelemetryOptions(options => options.ReportDelay = TimeSpan.FromSeconds(40));
 
@@ -98,13 +98,23 @@ builder.Services.AddMassTransit(x =>
 
     x.SetKebabCaseEndpointNameFormatter();
 
-    x.UsingPostgres((context, cfg) =>
+    x.AddServiceBusMessageScheduler();
+    x.UsingAzureServiceBus((context, cfg) =>
     {
-        cfg.UseSqlMessageScheduler();
-        cfg.UseJobSagaPartitionKeyFormatters();
-
+        cfg.UseServiceBusMessageScheduler();
+        cfg.Host(builder.Configuration["ConnectionStrings:AzureServiceBus"]);
         cfg.ConfigureEndpoints(context);
+        cfg.UseMessageRetry(c => c.Immediate(3));
     });
+    
+    
+    // x.UsingPostgres((context, cfg) =>
+    // {
+    //     cfg.UseSqlMessageScheduler();
+    //     cfg.UseJobSagaPartitionKeyFormatters();
+    //
+    //     cfg.ConfigureEndpoints(context);
+    // });
 });
 
 builder.Services.AddOptions<MassTransitHostOptions>()
@@ -131,7 +141,7 @@ app.UseSwaggerUi();
 app.UseRouting();
 app.UseAuthorization();
 
-app.UseResQueue();
+// app.UseResQueue();
 
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {

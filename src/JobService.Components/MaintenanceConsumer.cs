@@ -19,7 +19,7 @@ public class MaintenanceConsumer :
     {
         _logger.LogInformation("Performing regularly scheduled maintenance");
 
-        await Task.Delay(5000);
+        // await Task.Delay(5000);
 
         _logger.LogInformation("Maintenance Finished");
     }
