@@ -15,14 +15,27 @@ using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .MinimumLevel.Override("MassTransit", LogEventLevel.Information)
+    .MinimumLevel.Override("MassTransit", LogEventLevel.Debug)
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.Hosting", LogEventLevel.Information)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Fatal)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Fatal)
     .Enrich.FromLogContext()
     .WriteTo.Console()
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
+
+// Log.Logger = new LoggerConfiguration()
+//     .MinimumLevel.Information()
+//     .MinimumLevel.Override("MassTransit", LogEventLevel.Debug)
+//     .MinimumLevel.Override("Microsoft", LogEventLevel.Debug)
+//     .MinimumLevel.Override("Microsoft.Hosting", LogEventLevel.Debug)
+//     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Debug)
+//     .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Debug)
+//     .Enrich.FromLogContext()
+//     .WriteTo.Console()
+//     .CreateLogger();
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,8 +87,6 @@ builder.Services.AddHostedService<MigrationHostedService<JobServiceSagaDbContext
 
 builder.Services.AddMassTransit(x =>
 {
-    // x.AddSqlMessageScheduler();
-
     x.ConfigureUsageTelemetryOptions(options => options.ReportDelay = TimeSpan.FromSeconds(40));
 
     x.AddConsumer<ConvertVideoJobConsumer, ConvertVideoJobConsumerDefinition>()
@@ -96,6 +107,9 @@ builder.Services.AddMassTransit(x =>
             r.UsePostgres();
         });
 
+    // x.AddJobSagaStateMachines(options => options.FinalizeCompleted = false);
+    // x.SetInMemorySagaRepositoryProvider();
+    
     x.SetKebabCaseEndpointNameFormatter();
 
     x.AddServiceBusMessageScheduler();
@@ -104,10 +118,24 @@ builder.Services.AddMassTransit(x =>
         cfg.UseServiceBusMessageScheduler();
         cfg.Host(builder.Configuration["ConnectionStrings:AzureServiceBus"]);
         cfg.ConfigureEndpoints(context);
-        cfg.UseMessageRetry(c => c.Immediate(3));
+        cfg.UseMessageRetry(c => c.Immediate(10));
     });
-    
-    
+
+    // x.AddDelayedMessageScheduler();
+    // x.UsingRabbitMq((context, cfg) =>
+    // {
+    //     cfg.UseDelayedMessageScheduler();
+    //     cfg.UseJobSagaPartitionKeyFormatters();
+    //     cfg.Host(builder.Configuration["Rabbit:Host"], ushort.Parse(builder.Configuration["Rabbit:Port"]), builder.Configuration["Rabbit:VirtualHost"], h =>
+    //     {
+    //         h.Username(builder.Configuration["Rabbit:username"]);
+    //         h.Password(builder.Configuration["Rabbit:Password"]);
+    //     });
+    //
+    //     cfg.ConfigureEndpoints(context);
+    // });
+
+    // x.AddSqlMessageScheduler();
     // x.UsingPostgres((context, cfg) =>
     // {
     //     cfg.UseSqlMessageScheduler();
